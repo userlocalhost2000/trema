@@ -1,41 +1,26 @@
 Feature: stats_reply handlers
 
-  The stats_reply is a message handler to get any kind of statistical information, but note
-  that this handler will be deprecated in near future. Instead, you should use type-specific 
-  handlers (desc_stats_reply, flow_stats_reply, aggregate_stats_reply, table_stats_reply,
-  port_stats_reply, queue_stats_reply and vendor_stats_reply).
+  'stats_reply' ハンドラは、すスイッチの様々な情報を取得するためのハンドラです。
+  'stats_reply' ハンドラによって取得できる情報は次のデータを含みます。
 
-  This handler can treat StatsReply object through the 'message' parameter which is the second 
-  argument of this handler. This object has the reply message corresponding to the request.
-  For more information about this, you can see in the Trema API document 
-  (http://rubydoc.info/github/trema/trema/master/Trema/StatsReply).
+  * ハードウェア情報
+  * フローテーブルの情報
+  * フローエントリの情報
+  * フローエントリの統計情報
+  * スイッチの物理ポートの情報
 
-  To handle this message handler, you should send an OpenFlow message which is named 
-  Read-State message to the switch. The Read-State message is classified by 
-  the type of information to get, and the type is identified by the 'type' parameter of 
-  Read-State request message, but the Trema abstracts this mechanism.
+  NOTE: 'stats_reply' ハンドラは将来のバージョンで利用できなくなる予定です。
+        代わりに、コントローラは取得する情報毎に用意されたイベントハンドラ
+       （特定タイプハンドラ）を利用します。
 
-  To send a Read-State request message, the controller should instantiate a sub-class 
-  of StatsRequest (DescStatsRequest, FlowStatsRequest, AggregateStatsRequest, TableStatsRequest, 
-  PortStatsRequest, QueueStatsRequest and VendorStatsRequest), and sends it using send_message 
-  method as shown below.
+  これらの情報を取得するための典型的なコードを、それぞれ以下のシナリオに示します。
 
-  For backward compatibility, if the controller defines both obsolete stats_reply handler and
-  new type-specific handlers (port_stats_reply, flow_stats_reply, etc..), Trema fires former.
-
-  Scenario: obsolete stats_reply handler
-    Given a file named "obsolete-stats-reply-checker.rb" with:
+  Scenario: ハードウェア情報を取得する場合
+    Given a file named "obsolete-stats-reply-checker-for-DescStatsRequest.rb" with:
     """
     class ObsoleteStatsReplyChecker < Controller
       def switch_ready datapath_id
-        # This is for getting a reply of ofp_flow_stats
-        send_flow_mod_add datapath_id, :match => Match.new
-    
         send_message datapath_id, DescStatsRequest.new 
-        send_message datapath_id, FlowStatsRequest.new( :match => Match.new ) 
-        send_message datapath_id, AggregateStatsRequest.new( :match => Match.new ) 
-        send_message datapath_id, TableStatsRequest.new 
-        send_message datapath_id, PortStatsRequest.new 
       end
 
 
@@ -53,12 +38,110 @@ Feature: stats_reply handlers
     When I run `trema run ./obsolete-stats-reply-checker.rb -c sample.conf` interactively
     Then the output should contain "Warning: 'stats_reply' handler will be deprecated" within the timeout period
       And the output should contain "message : Trema::DescStatsReply" within the timeout period
-      And the output should contain "message : Trema::FlowStatsReply" within the timeout period
-      And the output should contain "message : Trema::AggregateStatsReply" within the timeout period
+
+  Scenario: フローテーブルの情報を取得する場合
+    Given a file named "obsolete-stats-reply-checker-for-TableStatsRequest.rb" with:
+    """
+    class ObsoleteStatsReplyChecker < Controller
+      def switch_ready datapath_id
+        send_message datapath_id, TableStatsRequest.new 
+      end
+
+
+      def stats_reply datapath_id, message
+        message.stats.each do | each |
+          info "message : #{ each.class }"
+        end
+      end
+    end
+    """
+    And a file named "sample.conf" with:
+    """
+    vswitch { datapath_id "0xabc" }
+    """
+    When I run `trema run ./obsolete-stats-reply-checker.rb -c sample.conf` interactively
+    Then the output should contain "Warning: 'stats_reply' handler will be deprecated" within the timeout period
       And the output should contain "message : Trema::TableStatsReply" within the timeout period
+
+  Scenario: フローエントリの情報を取得する場合
+    Given a file named "obsolete-stats-reply-checker-for-FlowStatsRequest.rb" with:
+    """
+    class ObsoleteStatsReplyChecker < Controller
+      def switch_ready datapath_id
+        # This is for getting a reply of ofp_flow_stats
+        send_flow_mod_add datapath_id, :match => Match.new
+    
+        send_message datapath_id, FlowStatsRequest.new( :match => Match.new ) 
+      end
+
+
+      def stats_reply datapath_id, message
+        message.stats.each do | each |
+          info "message : #{ each.class }"
+        end
+      end
+    end
+    """
+    And a file named "sample.conf" with:
+    """
+    vswitch { datapath_id "0xabc" }
+    """
+    When I run `trema run ./obsolete-stats-reply-checker.rb -c sample.conf` interactively
+    Then the output should contain "Warning: 'stats_reply' handler will be deprecated" within the timeout period
+      And the output should contain "message : Trema::FlowStatsReply" within the timeout period
+
+  Scenario: フローエントリの統計情報を取得する場合
+    Given a file named "obsolete-stats-reply-checker-for-AggregateStatsRequest.rb" with:
+    """
+    class ObsoleteStatsReplyChecker < Controller
+      def switch_ready datapath_id
+        # This is for getting a reply of ofp_flow_stats
+        send_flow_mod_add datapath_id, :match => Match.new
+    
+        send_message datapath_id, AggregateStatsRequest.new( :match => Match.new ) 
+      end
+
+
+      def stats_reply datapath_id, message
+        message.stats.each do | each |
+          info "message : #{ each.class }"
+        end
+      end
+    end
+    """
+    And a file named "sample.conf" with:
+    """
+    vswitch { datapath_id "0xabc" }
+    """
+    When I run `trema run ./obsolete-stats-reply-checker.rb -c sample.conf` interactively
+    Then the output should contain "Warning: 'stats_reply' handler will be deprecated" within the timeout period
+      And the output should contain "message : Trema::AggregateStatsReply" within the timeout period
+
+  Scenario: スイッチの物理ポートの情報を取得する場合
+    Given a file named "obsolete-stats-reply-checker-for-PortStatsRequest.rb" with:
+    """
+    class ObsoleteStatsReplyChecker < Controller
+      def switch_ready datapath_id
+        send_message datapath_id, PortStatsRequest.new 
+      end
+
+
+      def stats_reply datapath_id, message
+        message.stats.each do | each |
+          info "message : #{ each.class }"
+        end
+      end
+    end
+    """
+    And a file named "sample.conf" with:
+    """
+    vswitch { datapath_id "0xabc" }
+    """
+    When I run `trema run ./obsolete-stats-reply-checker.rb -c sample.conf` interactively
+    Then the output should contain "Warning: 'stats_reply' handler will be deprecated" within the timeout period
       And the output should contain "message : Trema::PortStatsReply" within the timeout period
 
-  Scenario: hybrid stats_reply handler
+  Scenario: 'stats_reply' ハンドラと特定タイプハンドラの両方が定義されている場合
     Given a file named "hybrid-stats-reply-checker.rb" with:
     """
     class HybridStatsReplyChecker < Controller

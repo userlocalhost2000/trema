@@ -1,22 +1,21 @@
 Feature: desc_stats_reply handlers
 
-  The desc_stats_reply is a message handler to get informatoin about a switch manufacturer.
+  'desc_stats_reply' ハンドラは、スイッチのハードウェア情報を取得するためのハンドラです。
+  このハードウェア情報は次のデータを含みます。
 
-  This handler can treat DescStatsReply object through the 'message' parameter which is 
-  the second argument of this handler. This object has information about the switch manufacturer, 
-  hardware revision, software revision, serial number, and a description field is available. 
-  For more information about this, you can see in the Trema API document 
-  (http://rubydoc.info/github/trema/trema/master/Trema/DescStatsReply).
+  * 機器の情報
+  * ハードウェアの情報
+  * ソフトウェアの情報
+  * スイッチの説明
+  * シリアル番号
 
-  To handle this message handler, you should send an OpenFlow message which is named 
-  Read-State message to the switch. The Read-State message is classified by 
-  the type of information to get, and the type is identified by the 'type' parameter of 
-  Read-State request message, but the Trema abstracts this mechanism.
+  ハードウェア情報を取得するための典型的なコードは、次のようになります。
 
-  To send a Read-State request message that is corresponding to the desc_stats_reply,
-  the controller should make that using DescStatsRequest.new, and sends it using 
-  send_message method as shown below. Detail of the parameters of this class is described 
-  in the document (http://rubydoc.info/github/trema/trema/master/Trema/DescStatsRequest).
+  1. コントローラは、スイッチに対してハードウェア情報を取得する
+     'DescStatsRequest' メッセージを送る。
+  2. スイッチがこれに応答し、'DescStatsReply' メッセージをコントローラへ送る。
+  3. コントローラの 'desc_stats_reply' ハンドラでこのメッセージをハンドルし、
+     ハードウェア情報を取得する。
 
   Scenario: desc_stats_reply handler
     Given a file named "desc-stats-reply-checker.rb" with:
@@ -48,3 +47,4 @@ Feature: desc_stats_reply handlers
      And the output should contain "sw_desc : " within the timeout period
      And the output should contain "serial_num : " within the timeout period
      And the output should contain "dp_desc : " within the timeout period
+

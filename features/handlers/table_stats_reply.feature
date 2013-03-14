@@ -1,23 +1,22 @@
 Feature: table_stats_reply handlers
 
-  The table_stats_reply is a message handler to get information about tables that 
-  a switch supports.
+  'table_stats_reply' ハンドラは、スイッチのフローテーブルの情報を取得するためのハンドラです。
+  フローテーブルの情報は次のデータを含みます。
 
-  This handler can treat TableStatsReply object through the 'message' parameter which is 
-  the second argument of this handler. This object has configuration information, 
-  table_id, name, the number of maximum flows that the switch can contain, etc. For more 
-  information about this, you can see in the Trema API document 
-  (http://rubydoc.info/github/trema/trema/master/Trema/TableStatsReply).
+  * フローテーブルの ID
+  * 当該フローテーブルがサポートする "Wildcard" パラメータの種類
+  * 当該フローテーブルが格納できるフローエントリの最大数
+  * 当該フローテーブルにインストールされているフローエントリの数
+  * 当該フローエントリを参照したパケットの数
+  * 当該フローエントリが処理したパケットの数
 
-  To handle this message handler, you should send an OpenFlow message which is named 
-  Read-State message to the switch. The Read-State message is classified by 
-  the type of information to get, and the type is identified by the 'type' parameter of 
-  Read-State request message, but the Trema abstracts this mechanism.
+  フローテーブルの情報を取得するための典型的なコードは、次のようになります。
 
-  To send a Read-State request message that is corresponding to the table_stats_reply,
-  the controller should make that using TableStatsRequest.new, and send it using 
-  send_message method as shown below. Detail of the parameters of this class is described 
-  in the document (http://rubydoc.info/github/trema/trema/master/Trema/TableStatsRequest).
+  1. コントローラは、スイッチに対してフローテーブルの情報を取得する
+     'TableStatsRequest' メッセージを送る。
+  2. スイッチがこれに応答し、'TableStatsReply' メッセージをコントローラへ送る。
+  3. コントローラの 'table_stats_reply' ハンドラでこのメッセージをハンドルし、
+     フローテーブルの情報を取得する。
 
   Scenario: table_stats_reply handler
     Given a file named "table-stats-reply-checker.rb" with:

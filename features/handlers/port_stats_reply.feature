@@ -1,23 +1,27 @@
 Feature: port_stats_reply handlers
 
-  The port_stats_reply is a message handler to get statistics about physical ports of a switch.
+  'port_stats_reply' ハンドラは、スイッチの物理ポートの情報を取得するためのハンドラです。
+  物理ポートの情報は次のデータを含みます。
 
-  This handler can treat PortStatsReply object through the 'message' parameter which is 
-  the second argument of this handler. This object has statistics about 
-  each physical port of the switch (e.g. the number of bytes of packets sent and received 
-  in the past, the number of packets dropped, and the number of packets error, etc). 
-  For more information about this, you can see in the Trema API document 
-  (http://rubydoc.info/github/trema/trema/master/Trema/PortStatsReply).
+  * 物理ポート番号
+  * 送信したパケットの数
+  * 受信したパケットの数
+  * 送信したトラフィックのバイト数
+  * 受信したトラフィックのバイト数
+  * 送信したエラーパケットの数
+  * 受信したエラーパケットの数
+  * 受信したアライメントエラーフレームの数
+  * 取りこぼしたパケットの数
+  * 受信した CRC エラーのパケットの数
+  * 衝突の回数
 
-  To handle this message handler, you should send an OpenFlow message which is named 
-  Read-State message to the switch. The Read-State message is classified by 
-  a type of information to get, and the type is identified by the 'type' parameter of 
-  Read-State request message, but this mechanism is abstracted by the Trema.
+  物理ポートの情報を取得するための典型的なコードは、次のようになります。
 
-  To send a Read-State request message that is corresponding to the port_stats_reply,
-  the controller should make that using PortStatsRequest.new, and sends it using 
-  send_message method as shown below. Detail of the parameters of this class is described 
-  in the document (http://rubydoc.info/github/trema/trema/master/Trema/PortStatsRequest).
+  1. コントローラは、スイッチに対して物理ポートの情報を取得する
+     'PortStatsRequest' メッセージを送る。
+  2. スイッチがこれに応答し、'PortStatsReply' メッセージをコントローラへ送る。
+  3. コントローラの 'port_stats_reply' ハンドラでこのメッセージをハンドルし、
+     物理ポートの情報を取得する。
 
   Scenario: port_stats_reply handler
     Given a file named "port-stats-reply-checker.rb" with:

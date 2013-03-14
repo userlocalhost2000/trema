@@ -1,23 +1,29 @@
 Feature: flow_stats_reply handlers
 
-  The flow_stats_reply is a message handler to get information about flows in a switch.
+  'flow_stats_reply' ハンドラは、スイッチのフローテーブルが格納する
+  フローエントリの情報を取得するためのハンドラです。この情報は次の
+  データを含みます。
 
-  This handler can treat FlowStatsReply object through the 'message' parameter which is 
-  the second argument of this handler. This object has configuration information
-  (e.g. priority of this entry, timeout parameter, and the Match object which has been set 
-  during installation, etc) and statistical information (e.g. the number of packets that this
-  flow has processed). For more information about this, you can see in the Trema API document
-  (http://rubydoc.info/github/trema/trema/master/Trema/FlowStatsReply).
+  * フローテーブルの ID
+  * フローエントリのフロー定義
+  * インストールされてからの時間
+  * 当該フローエントリの優先度
+  * タイムアウトの設定値
+  * クッキー値
+  * 当該フローエントリが処理したパケットの数
+  * 当該フローエントリが処理したトラフィックのバイト数
 
-  To handle this message handler, you should send an OpenFlow message which is named 
-  Read-State message to the switch. The Read-State message is classified by 
-  the type of information to get, and the type is identified by the 'type' parameter of 
-  Read-State request message, but the Trema abstracts this mechanism.
+  フローエントリの情報を取得するための典型的なコードは、次のようになります。
 
-  To send a Read-State request message that is corresponding to the flow_stats_reply,
-  the controller should make that using FlowStatsRequest.new, and sends it using 
-  send_message method as shown below. Detail of the parameters of this class is described 
-  in the document (http://rubydoc.info/github/trema/trema/master/Trema/FlowStatsRequest).
+  1. コントローラはフローエントリの情報の取得対象となる
+     フローエントリを絞り込む 'Match' オブジェクトを作成する
+  2. コントローラは [1] で作成した Match オブジェクトを指定し、
+     スイッチに対してフローエントリの情報を取得する
+     'FlowStatsRequest' メッセージを送る。
+  3. スイッチがこれに応答し、'FlowStatsReeply' メッセージを
+     コントローラへ送る。
+  4. コントローラの 'flow_stats_reply' ハンドラでこのメッセージを
+     ハンドルし、フローエントリの情報を取得する。
 
   Scenario: flow_stats_reply handler
     Given a file named "flow-stats-reply-checker.rb" with:

@@ -1,22 +1,24 @@
 Feature: aggregate_stats_reply handlers
 
-  The aggregate_stats_reply is a message handler to get aggregate statistics of flows in a switch.
+  `aggregate_stats_reply` ハンドラは、スイッチのフローテーブルが格納する
+  統計情報を取得するためのハンドラです。この統計情報は次のデータ
+  を含みます。
 
-  This handler can treat AggregateStatsReply object through the 'message' parameter which is 
-  the second argument of this handler. This object has statistics about aggregate number of bytes, 
-  number of packets, and flow counts. For more information about this, you can see in the Trema API 
-  document (http://rubydoc.info/github/trema/trema/master/Trema/AggregateStatsReply).
+   * フローテーブル内にある指定したフロー定義に該当するフローエントリの数
+   * 指定したフロー定義に該当するフローエントリが処理したパケットの数
+   * 指定したフロー定義に該当するフローエントリが処理したトラフィックのバイト数
 
-  To handle this message handler, you should send an OpenFlow message which is named 
-  Read-State message to the switch. The Read-State message is classified by 
-  the type of information to get, and the type is identified by the 'type' parameter of 
-  Read-State request message, but the Trema abstracts this mechanism.
+  統計情報を取得するための典型的なコードは、次のようになります:
 
-  To send a Read-State request message that is corresponding to the aggregate_stats_reply,
-  the controller should make that using AggregateStatsRequest.new with Match object that is a 
-  configuration which flows to get, and sends it using send_message method as shown below. 
-  Detail of the parameters of this class is described in the document 
-  (http://rubydoc.info/github/trema/trema/master/Trema/AggregateStatsRequest).
+   1. コントローラは統計情報の取得対象となるフローエントリを絞り込む
+      'Match' オブジェクトを作成する
+   2. コントローラは [1] で作成した Match オブジェクトを指定し、
+   　 スイッチに対して統計情報を取得する
+      `AggregateStatsRequest` メッセージを送る。
+   3. スイッチがこれに応答し、`AggregateStatsReply` メッセージを
+      コントローラへ送る
+   4. コントローラの `aggregate_stats_reply` ハンドラでこのメッセージを
+      ハンドルし、統計情報を取得する。
 
   Scenario: aggregate_stats_reply handler
     Given a file named "aggregate-stats-reply-checker.rb" with:
@@ -31,9 +33,9 @@ Feature: aggregate_stats_reply handlers
 
       def aggregate_stats_reply datapath_id, message
         message.stats.each do | each |
+          info "flow_count : #{ each.flow_count }"
           info "packet_count : #{ each.packet_count }"
           info "byte_count : #{ each.byte_count }"
-          info "flow_count : #{ each.flow_count }"
         end
       end
     end
@@ -46,3 +48,4 @@ Feature: aggregate_stats_reply handlers
     Then the output should contain "packet_count : " within the timeout period
      And the output should contain "byte_count : " within the timeout period
      And the output should contain "flow_count : " within the timeout period
+
